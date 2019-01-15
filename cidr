@@ -1,0 +1,49 @@
+#!/bin/bash
+# Mel - 2018-12-12 - network functions
+
+# takes 2 arguments: an ip and a cidr
+# returns: 0 if ip is in the cidr range
+#          1 if not
+# sample use:
+#if incidr 1.2.3.4 1.5.8.9/8; then echo yes;else echo no;fi   # yes
+#if incidr 9.2.3.4 1.5.8.9/8; then echo yes;else echo no;fi   # no
+#if incidr 2.3.4.5 2.3.8.33/16; then echo yes;else echo no;fi # yes
+incidr(){
+    ip=$1
+    oIFS=$IFS
+    IFS='/'
+    temparr=($2)
+    IFS='.'
+    iparr=($ip)
+    cidriparr=(${temparr[0]})
+    IFS=$oIFS
+    cidr="${temparr[0]}"
+    mask="${temparr[1]}"
+
+    min=0
+    ipval=0
+    for x in $(seq 0 3);do
+	    octet=${cidriparr[$x]}
+	    min=$((min+octet))
+	    [[ $x -eq 3 ]] || min=$((min*256))
+        octet=${iparr[$x]}
+        ipval=$((ipval+octet))
+	    [[ $x -eq 3 ]] || ipval=$((ipval*256))
+    done
+    shftcnt=$((32-mask))
+    min=$((min>>shftcnt))
+    min=$((min<<shftcnt))
+
+    max=$((min>>shftcnt))
+    max=$((max<<1))
+    max=$((max|(max+1)))
+    max=$((max<<(shftcnt-1)))
+    max=$((max | (max-1)))
+    #echo "Min: $min  Max: $max IP: $ipval Mask: $mask ShiftCount: $shftcnt"
+    if [[ $min -le $ipval ]] && [[ $max -ge $ipval ]];then
+        return 0
+    else
+        return 1
+    fi
+}
+

@@ -1,0 +1,17 @@
+#!/bin/bash
+# you should make sure that your own IP/subnet is allowed in iptables, so it will show as "already handled"
+# Mel - 2019-01-14 - show IP's that should be blocked because they are trying to login
+. cidr  # use full path in the real world
+for badguyip in $(lastb -i|awk '{print $3}'|sort -u|grep -E '^[0-9]');do
+    found="no"
+    for ipt in $(iptables-save |grep INPUT|grep -v -E 'RELATED|^:'|sed 's/^.*\-s \([0-9\.\/]*\) .*$/\1/');do
+        if incidr $badguyip $ipt;then
+            found="yes"
+        fi
+    done
+    if [[ $found == "no" ]];then
+        echo "$badguyip"
+    else
+        echo "$badguyip is already handled"
+    fi
+done
